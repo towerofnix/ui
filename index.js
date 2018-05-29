@@ -5,6 +5,19 @@ const { getDownloaderFor } = require('./downloaders')
 const EventEmitter = require('events')
 
 class InternalApp extends EventEmitter {
+  constructor() {
+    super()
+    this.player = null
+  }
+
+  async setup() {
+    this.player = await getPlayer()
+  }
+
+  async startPlaying(arg) {
+    this.player.playFile(await this.download(arg))
+  }
+
   download(arg) {
     return getDownloaderFor(arg)(arg)
   }
@@ -12,8 +25,8 @@ class InternalApp extends EventEmitter {
 
 async function main() {
   const internalApp = new InternalApp()
-  const player = await getPlayer()
-  player.playFile(await internalApp.download('http://billwurtz.com/cable-television.mp3'))
+  await internalApp.setup()
+  internalApp.startPlaying('http://billwurtz.com/cable-television.mp3')
 }
 
 main().catch(err => console.error(err))
