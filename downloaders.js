@@ -1,6 +1,8 @@
 const { promisifyProcess } = require('./general-util')
-const { spawn } = require('child_process')
 const { promisify } = require('util')
+const { spawn } = require('child_process')
+const { Base64 } = require('js-base64')
+const mkdirp = promisify(require('mkdirp'))
 const fs = require('fs')
 const fse = require('fs-extra')
 const fetch = require('node-fetch')
@@ -9,34 +11,82 @@ const path = require('path')
 const sanitize = require('sanitize-filename')
 
 const writeFile = promisify(fs.writeFile)
+const rename = promisify(fs.rename)
+const stat = promisify(fs.stat)
+const readdir = promisify(fs.readdir)
+const symlink = promisify(fs.symlink)
 const copyFile = fse.copy
 
-// Pseudo-tempy!!
-/*
-const tempy = {
-  directory: () => './tempy-fake'
-}
-*/
+const cachify = (identifier, baseFunction) => {
+  return async arg => {
+    // Determine where the final file will end up. This is just a directory -
+    // the file's own name is determined by the downloader.
+    const cacheDir = downloaders.rootCacheDir + '/' + identifier
+    const finalDirectory = cacheDir + '/' + Base64.encode(arg)
 
-class Downloader {
-  download(arg) {}
+    // Check if that directory only exists. If it does, return the file in it,
+    // because it being there means we've already downloaded it at some point
+    // in the past.
+    let exists
+    try {
+      await stat(finalDirectory)
+      exists = true
+    } catch (error) {
+      // ENOENT means the folder doesn't exist, which is one of the potential
+      // expected outputs, so do nothing and let the download continue.
+      if (error.code === 'ENOENT') {
+        exists = false
+      }
+      // Otherwise, there was some unexpected error, so throw it:
+      else {
+        throw error
+      }
+    }
+
+    // If the directory exists, return the file in it. Downloaders always
+    // return only one file, so it's expected that the directory will only
+    // contain a single file. We ignore any other files. Note we also allow
+    // the download to continue if there aren't any files in the directory -
+    // that would mean that the file (but not the directory) was unexpectedly
+    // deleted.
+    if (exists) {
+      const files = await readdir(finalDirectory)
+      if (files.length >= 1) {
+        return finalDirectory + '/' + files[0]
+      }
+    }
+
+    // The "temporary" output, aka the download location. Generally in a
+    // temporary location as returned by tempy.
+    const tempFile = await baseFunction(arg)
+
+    // Then move the download to the final location. First we need to make the
+    // folder exist, then we move the file.
+    const finalFile = finalDirectory + '/' + path.basename(tempFile)
+    await mkdirp(finalDirectory)
+    await rename(tempFile, finalFile)
+
+    // And return.
+    return finalFile
+  }
 }
 
-// oh who cares about classes or functions or kool things
+const removeFileProtocol = arg => {
+  const fileProto = 'file://'
+  if (arg.startsWith(fileProto)) {
+    return decodeURIComponent(arg.slice(fileProto.length))
+  } else {
+    return arg
+  }
+}
 
 const downloaders = {
-  extension: 'mp3', // Generally target file extension
+  extension: 'mp3', // Generally target file extension, used by youtube-dl
 
-  cache: {
-    http: {},
-    youtubedl: {},
-    local: {}
-  },
+  // TODO: Cross-platform stuff
+  rootCacheDir: process.env.HOME + '/.http-music/downloads',
 
-  http: arg => {
-    const cached = downloaders.cache.http[arg]
-    if (cached) return cached
-
+  http: cachify('http', arg => {
     const out = (
       tempy.directory() + '/' +
       sanitize(decodeURIComponent(path.basename(arg))))
@@ -44,16 +94,12 @@ const downloaders = {
     return fetch(arg)
       .then(response => response.buffer())
       .then(buffer => writeFile(out, buffer))
-      .then(() => downloaders.cache.http[arg] = out)
-  },
+      .then(() => out)
+  }),
 
-  youtubedl: arg => {
-    const cached = downloaders.cache.youtubedl[arg]
-    if (cached) return cached
-
+  youtubedl: cachify('youtubedl', arg => {
     const out = (
-      tempy.directory() + '/' + sanitize(arg) +
-      '.' + downloaders.extname)
+      tempy.directory() + '/download.' + downloaders.extension)
 
     const opts = [
       '--quiet',
@@ -64,11 +110,10 @@ const downloaders = {
     ]
 
     return promisifyProcess(spawn('youtube-dl', opts))
-      .then(() => downloaders.cache.youtubedl[arg] = out)
-      .catch(err => false)
-  },
+      .then(() => out)
+  }),
 
-  local: arg => {
+  local: cachify('local', arg => {
     // Usually we'd just return the given argument in a local
     // downloader, which is efficient, since there's no need to
     // copy a file from one place on the hard drive to another.
@@ -85,20 +130,27 @@ const downloaders = {
     // It's possible the downloader argument starts with the "file://"
     // protocol string; in that case we'll want to snip it off and URL-
     // decode the string.
-    const fileProto = 'file://'
-    if (arg.startsWith(fileProto)) {
-      arg = decodeURIComponent(arg.slice(fileProto.length))
-    }
+    arg = removeFileProtocol(arg)
 
     // TODO: Is it necessary to sanitize here?
     // Haha, the answer to "should I sanitize" is probably always YES..
     const base = path.basename(arg, path.extname(arg))
-    const out = (
-      tempy.directory() + '/' + sanitize(base) + path.extname(arg))
+    const out = tempy.directory() + '/' + sanitize(base) + path.extname(arg)
 
     return copyFile(arg, out)
-      .then(() => downloaders.cache.local[arg] = out)
-  },
+      .then(() => out)
+  }),
+
+  locallink: cachify('locallink', arg => {
+    // Like the local downloader, but creates a symbolic link to the argument.
+
+    arg = removeFileProtocol(arg)
+    const base = path.basename(arg, path.extname(arg))
+    const out = tempy.directory() + '/' + sanitize(base) + path.extname(arg)
+
+    return symlink(path.resolve(arg), out)
+      .then(() => out)
+  }),
 
   echo: arg => arg,
 
@@ -110,7 +162,8 @@ const downloaders = {
         return downloaders.http
       }
     } else {
-      return downloaders.local
+      // return downloaders.local
+      return downloaders.locallink
     }
   }
 }

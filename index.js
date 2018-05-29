@@ -42,6 +42,8 @@ class InternalApp extends EventEmitter {
 async function main() {
   const internalApp = new InternalApp()
   await internalApp.setup()
+
+  /*
   await internalApp.startPlaying('http://billwurtz.com/cable-television.mp3')
   await new Promise(r => setTimeout(r, 2000))
   internalApp.togglePause()
@@ -49,6 +51,11 @@ async function main() {
   internalApp.togglePause()
   await new Promise(r => setTimeout(r, 2000))
   internalApp.stopPlaying()
+  */
+
+  for (const item of require('./flat.json').items) {
+    await internalApp.download(item.downloaderArg)
+  }
 }
 
 main().catch(err => console.error(err))
