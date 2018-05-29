@@ -27,7 +27,16 @@ class Downloader {
 const downloaders = {
   extension: 'mp3', // Generally target file extension
 
+  cache: {
+    http: {},
+    youtubedl: {},
+    local: {}
+  },
+
   http: arg => {
+    const cached = downloaders.cache.http[arg]
+    if (cached) return cached
+
     const out = (
       tempy.directory() + '/' +
       sanitize(decodeURIComponent(path.basename(arg))))
@@ -35,10 +44,13 @@ const downloaders = {
     return fetch(arg)
       .then(response => response.buffer())
       .then(buffer => writeFile(out, buffer))
-      .then(() => out)
+      .then(() => downloaders.cache.http[arg] = out)
   },
 
   youtubedl: arg => {
+    const cached = downloaders.cache.youtubedl[arg]
+    if (cached) return cached
+
     const out = (
       tempy.directory() + '/' + sanitize(arg) +
       '.' + downloaders.extname)
@@ -52,7 +64,7 @@ const downloaders = {
     ]
 
     return promisifyProcess(spawn('youtube-dl', opts))
-      .then(() => out)
+      .then(() => downloaders.cache.youtubedl[arg] = out)
       .catch(err => false)
   },
 
@@ -85,7 +97,7 @@ const downloaders = {
       tempy.directory() + '/' + sanitize(base) + path.extname(arg))
 
     return copyFile(arg, out)
-      .then(() => out)
+      .then(() => downloaders.cache.local[arg] = out)
   },
 
   echo: arg => arg,
