@@ -9,6 +9,11 @@ const EventEmitter = require('events')
 const Flushable = require('./tui-lib/util/Flushable')
 const Root = require('./tui-lib/ui/Root')
 
+process.on('unhandledRejection', error => {
+  console.error(error.stack)
+  process.exit(1)
+})
+
 class InternalApp extends EventEmitter {
   constructor() {
     super()
@@ -45,10 +50,10 @@ class InternalApp extends EventEmitter {
 }
 
 async function main() {
+  /*
   const internalApp = new InternalApp()
   await internalApp.setup()
 
-  /*
   await internalApp.startPlaying('http://billwurtz.com/cable-television.mp3')
   await new Promise(r => setTimeout(r, 2000))
   internalApp.togglePause()
@@ -82,6 +87,8 @@ async function main() {
   root.addChild(appElement)
   root.select(appElement)
 
+  await appElement.setup()
+
   appElement.on('quitRequested', () => {
     process.stdout.write(ansi.cleanCursor())
     process.exit(0)
@@ -89,13 +96,16 @@ async function main() {
 
   const grouplike = {
     items: [
-      {name: 'Nice'},
-      {name: 'W00T!'},
-      {name: 'All-star'}
+      {name: 'alphabet shuffle', downloaderArg: 'http://www.billwurtz.com/alphabet-shuffle.mp3'},
+      {name: 'in california', downloaderArg: 'http://www.billwurtz.com/in-california.mp3'},
+      {name: 'i love you', downloaderArg: 'http://www.billwurtz.com/i-love-you.mp3'},
+      {name: 'movie star', downloaderArg: 'http://www.billwurtz.com/movie-star.mp3'},
+      {name: 'got to know what\'s going on', downloaderArg: 'http://www.billwurtz.com/got-to-know-whats-going-on.mp3'},
+      {name: 'outside', downloaderArg: 'http://www.billwurtz.com/outside.mp3'},
+      {name: 'La de da de da de da de day oh', downloaderArg: 'http://www.billwurtz.com/la-de-da-de-da-de-da-de-day-oh.mp3'},
+      {name: 'and the day goes on', downloaderArg: 'http://www.billwurtz.com/and-the-day-goes-on.mp3'}
     ]
   }
-
-  appElement.recordStore.getRecord(grouplike.items[2]).downloading = true
 
   appElement.grouplikeListingElement.loadGrouplike(grouplike)
 
