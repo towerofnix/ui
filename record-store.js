@@ -1,4 +1,4 @@
-const recordSymbolKey = Symbol()
+const recordSymbolKey = Symbol('Record symbol')
 
 module.exports = class RecordStore {
   constructor() {
@@ -13,7 +13,7 @@ module.exports = class RecordStore {
     }
 
     if (!obj[recordSymbolKey]) {
-      obj[recordSymbolKey] = Symbol()
+      obj[recordSymbolKey] = Symbol('Reference to a record')
     }
 
     if (!this.data[obj[recordSymbolKey]]) {

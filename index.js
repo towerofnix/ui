@@ -3,6 +3,7 @@
 const { getPlayer } = require('./players')
 const { getDownloaderFor } = require('./downloaders')
 const { AppElement } = require('./ui')
+const { updatePlaylistFormat } = require('./playlist-utils')
 const ansi = require('./tui-lib/util/ansi')
 const CommandLineInterfacer = require('./tui-lib/util/CommandLineInterfacer')
 const EventEmitter = require('events')
@@ -94,8 +95,9 @@ async function main() {
     process.exit(0)
   })
 
-  const grouplike = {
+  let grouplike = {
     items: [
+      {name: 'bears', downloaderArg: 'http://www.billwurtz.com/bears.mp3'},
       {name: 'alphabet shuffle', downloaderArg: 'http://www.billwurtz.com/alphabet-shuffle.mp3'},
       {name: 'in california', downloaderArg: 'http://www.billwurtz.com/in-california.mp3'},
       {name: 'i love you', downloaderArg: 'http://www.billwurtz.com/i-love-you.mp3'},
@@ -106,6 +108,10 @@ async function main() {
       {name: 'and the day goes on', downloaderArg: 'http://www.billwurtz.com/and-the-day-goes-on.mp3'}
     ]
   }
+
+  // let grouplike = require('./flat.json')
+
+  grouplike = updatePlaylistFormat(grouplike)
 
   appElement.grouplikeListingElement.loadGrouplike(grouplike)
 

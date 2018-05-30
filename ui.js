@@ -1,5 +1,6 @@
 const { getDownloaderFor } = require('./downloaders')
 const { getPlayer } = require('./players')
+const { parentSymbol } = require('./playlist-utils')
 const ansi = require('./tui-lib/util/ansi')
 const Button = require('./tui-lib/ui/form/Button')
 const FocusElement = require('./tui-lib/ui/form/FocusElement')
@@ -70,6 +71,12 @@ class AppElement extends FocusElement {
       throw new Error('Attempted to play before a player was loaded')
     }
 
+    let playingThisTrack = true
+    this.emit('playing new track')
+    this.once('playing new track', () => {
+      playingThisTrack = false
+    })
+
     // TODO: Check if it's an item or a group
 
     const downloadFile = await this.downloadGrouplikeItem(item)
@@ -79,6 +86,25 @@ class AppElement extends FocusElement {
       await this.player.playFile(downloadFile)
     } finally {
       this.recordStore.getRecord(item).playing = false
+    }
+
+    // playingThisTrack now means whether the track played through to the end
+    // (true), or was stopped by a different track being started (false).
+
+    if (playingThisTrack) {
+      this.playNextTrack(item)
+    }
+  }
+
+  playNextTrack(track) {
+    const parent = track[parentSymbol]
+    if (!parent) {
+      return
+    }
+    const index = parent.items.indexOf(track)
+    const nextItem = parent.items[index + 1]
+    if (nextItem) {
+      this.playGrouplikeItem(nextItem)
     }
   }
 }
