@@ -4,6 +4,7 @@ const { parentSymbol } = require('./playlist-utils')
 const ansi = require('./tui-lib/util/ansi')
 const Button = require('./tui-lib/ui/form/Button')
 const FocusElement = require('./tui-lib/ui/form/FocusElement')
+const Form = require('./tui-lib/ui/form/Form')
 const ListScrollForm = require('./tui-lib/ui/form/ListScrollForm')
 const Pane = require('./tui-lib/ui/Pane')
 const RecordStore = require('./record-store')
@@ -16,14 +17,30 @@ class AppElement extends FocusElement {
     this.player = null
     this.recordStore = new RecordStore()
 
-    this.pane = new Pane()
-    this.addChild(this.pane)
+    this.form = new Form()
+    this.addChild(this.form)
+
+    this.paneLeft = new Pane()
+    this.form.addChild(this.paneLeft)
+
+    this.paneRight = new Pane()
+    this.form.addChild(this.paneRight)
 
     this.grouplikeListingElement = new GrouplikeListingElement(this.recordStore)
-    this.pane.addChild(this.grouplikeListingElement)
+    this.paneLeft.addChild(this.grouplikeListingElement)
+    this.form.addInput(this.grouplikeListingElement, false)
 
     this.grouplikeListingElement.on('download', item => this.downloadGrouplikeItem(item))
-    this.grouplikeListingElement.on('play', item => this.playGrouplikeItem(item))
+    this.grouplikeListingElement.on('select', item => this.queueGrouplikeItem(item))
+
+    this.queueGrouplike = {items: []}
+
+    this.queueListingElement = new GrouplikeListingElement(this.recordStore)
+    this.queueListingElement.loadGrouplike(this.queueGrouplike)
+    this.paneRight.addChild(this.queueListingElement)
+    this.form.addInput(this.queueListingElement, false)
+
+    this.queueListingElement.on('select', item => this.playGrouplikeItem(item))
   }
 
   async setup() {
@@ -39,11 +56,17 @@ class AppElement extends FocusElement {
     this.w = this.parent.contentW
     this.h = this.parent.contentH
 
-    this.pane.w = this.contentW
-    this.pane.h = this.contentH
+    this.paneLeft.w = Math.max(Math.floor(0.8 * this.contentW), this.contentW - 80)
+    this.paneLeft.h = this.contentH
+    this.paneRight.x = this.paneLeft.right
+    this.paneRight.w = this.contentW - this.paneLeft.right
+    this.paneRight.h = this.contentH
 
-    this.grouplikeListingElement.w = this.pane.contentW
-    this.grouplikeListingElement.h = this.pane.contentH
+    this.grouplikeListingElement.w = this.paneLeft.contentW
+    this.grouplikeListingElement.h = this.paneLeft.contentH
+
+    this.queueListingElement.w = this.paneRight.contentW
+    this.queueListingElement.h = this.paneRight.contentH
   }
 
   keyPressed(keyBuf) {
@@ -53,6 +76,29 @@ class AppElement extends FocusElement {
     }
 
     super.keyPressed(keyBuf)
+  }
+
+  async queueGrouplikeItem(item) {
+    // TODO: Check if it's an item or a group
+
+    const items = this.queueGrouplike.items
+
+    // You can't put the same track in the queue twice - we automatically
+    // remove the old entry. (You can't for a variety of technical reasons,
+    // but basically you either have the display all bork'd, or new tracks
+    // can't be added to the queue in the right order (because Object.assign
+    // is needed to fix the display, but then you end up with a new object
+    // that doesn't work with indexOf).)
+    if (items.includes(item)) {
+      items.splice(items.indexOf(item), 1)
+    }
+
+    items.push(item)
+    this.queueListingElement.buildItems()
+
+    if (!this.playingTrack) {
+      this.playGrouplikeItem(item)
+    }
   }
 
   async downloadGrouplikeItem(item) {
@@ -82,36 +128,55 @@ class AppElement extends FocusElement {
     const downloadFile = await this.downloadGrouplikeItem(item)
     await this.player.kill()
     this.recordStore.getRecord(item).playing = true
+    this.playingTrack = item
     try {
       await this.player.playFile(downloadFile)
     } finally {
-      this.recordStore.getRecord(item).playing = false
+      if (playingThisTrack || this.playingTrack !== item) {
+        this.recordStore.getRecord(item).playing = false
+      }
     }
 
     // playingThisTrack now means whether the track played through to the end
     // (true), or was stopped by a different track being started (false).
 
     if (playingThisTrack) {
+      this.playingTrack = null
       this.playNextTrack(item)
     }
   }
 
   playNextTrack(track) {
-    const parent = track[parentSymbol]
-    if (!parent) {
-      return
+    const queue = this.queueGrouplike
+    let queueIndex = queue.items.indexOf(track)
+    if (queueIndex === -1) {
+      queueIndex = queue.items.length
     }
-    const index = parent.items.indexOf(track)
-    const nextItem = parent.items[index + 1]
-    if (nextItem) {
-      this.playGrouplikeItem(nextItem)
+    queueIndex++
+
+    if (queueIndex >= queue.items.length) {
+      const parent = track[parentSymbol]
+      if (!parent) {
+        return
+      }
+      const index = parent.items.indexOf(track)
+      const nextItem = parent.items[index + 1]
+      if (!nextItem) {
+        return
+      }
+      this.queueGrouplikeItem(nextItem)
+      queueIndex = queue.items.length - 1
     }
+
+    this.playGrouplikeItem(queue.items[queueIndex])
   }
 }
 
 class GrouplikeListingElement extends ListScrollForm {
   constructor(recordStore) {
     super('vertical')
+
+    this.captureTab = false
 
     this.grouplike = null
     this.recordStore = recordStore
@@ -127,11 +192,22 @@ class GrouplikeListingElement extends ListScrollForm {
       throw new Error('Attempted to call buildItems before a grouplike was loaded')
     }
 
+    const wasSelected = (this.root.selected &&
+      this.root.selected.directAncestors.includes(this))
+
+    while (this.inputs.length) {
+      this.removeInput(this.inputs[0])
+    }
+
     for (const item of this.grouplike.items) {
       const itemElement = new GrouplikeItemElement(item, this.recordStore)
       itemElement.on('download', () => this.emit('download', item))
-      itemElement.on('play', () => this.emit('play', item))
+      itemElement.on('select', () => this.emit('select', item))
       this.addInput(itemElement)
+    }
+
+    if (wasSelected) {
+      this.root.select(this)
     }
 
     this.fixLayout()
@@ -192,7 +268,7 @@ class GrouplikeItemElement extends Button {
     }
 
     if (telc.isSelect(keyBuf)) {
-      this.emit('play')
+      this.emit('select')
     }
   }
 }

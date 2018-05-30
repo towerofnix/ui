@@ -115,7 +115,7 @@ async function main() {
 
   appElement.grouplikeListingElement.loadGrouplike(grouplike)
 
-  root.select(appElement.grouplikeListingElement)
+  root.select(appElement.form)
 
   setInterval(() => {
     root.renderTo(flushable)
