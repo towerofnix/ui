@@ -55,7 +55,7 @@ async function main() {
     ]
   }
 
-  // grouplike = require('./flat.json')
+  // grouplike = require('./library.json')
 
   grouplike = updatePlaylistFormat(grouplike)
 
@@ -69,4 +69,7 @@ async function main() {
   }, 50)
 }
 
-main().catch(err => console.error(err))
+main().catch(err => {
+  console.error(err)
+  process.exit(1)
+})

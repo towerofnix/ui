@@ -1,6 +1,6 @@
 const { getDownloaderFor } = require('./downloaders')
 const { getPlayer } = require('./players')
-const { parentSymbol } = require('./playlist-utils')
+const { parentSymbol, isGroup } = require('./playlist-utils')
 const ansi = require('./tui-lib/util/ansi')
 const Button = require('./tui-lib/ui/form/Button')
 const DisplayElement = require('./tui-lib/ui/DisplayElement')
@@ -33,9 +33,15 @@ class AppElement extends FocusElement {
     this.form.addInput(this.grouplikeListingElement, false)
 
     this.grouplikeListingElement.on('download', item => this.downloadGrouplikeItem(item))
-    this.grouplikeListingElement.on('select', item => this.queueGrouplikeItem(item))
+    this.grouplikeListingElement.on('select', item => {
+      if (isGroup(item)) {
+        this.grouplikeListingElement.loadGrouplike(item)
+      } else {
+        this.queueGrouplikeItem(item)
+      }
+    })
 
-    this.queueGrouplike = {items: []}
+    this.queueGrouplike = {isTheQueue: true, items: []}
 
     this.queueListingElement = new GrouplikeListingElement(this.recordStore)
     this.queueListingElement.loadGrouplike(this.queueGrouplike)
@@ -82,7 +88,7 @@ class AppElement extends FocusElement {
   }
 
   keyPressed(keyBuf) {
-    if (keyBuf[0] === 0x03 || telc.isCaselessLetter(keyBuf, 'q')) {
+    if (keyBuf[0] === 0x03) {
       this.shutdown()
       return
     }
@@ -217,10 +223,10 @@ class GrouplikeListingElement extends ListScrollForm {
 
   loadGrouplike(grouplike) {
     this.grouplike = grouplike
-    this.buildItems()
+    this.buildItems(true)
   }
 
-  buildItems() {
+  buildItems(resetIndex = false) {
     if (!this.grouplike) {
       throw new Error('Attempted to call buildItems before a grouplike was loaded')
     }
@@ -232,15 +238,33 @@ class GrouplikeListingElement extends ListScrollForm {
       this.removeInput(this.inputs[0])
     }
 
-    for (const item of this.grouplike.items) {
-      const itemElement = new GrouplikeItemElement(item, this.recordStore)
-      itemElement.on('download', () => this.emit('download', item))
-      itemElement.on('select', () => this.emit('select', item))
-      this.addInput(itemElement)
+    const parent = this.grouplike[parentSymbol]
+    if (parent) {
+      const upButton = new Button('Up (to ' + (parent.name || 'unnamed group') + ')')
+      upButton.on('pressed', () => {
+        this.loadGrouplike(parent)
+      })
+      this.addInput(upButton)
+    }
+
+    if (this.grouplike.items.length) {
+      for (const item of this.grouplike.items) {
+        const itemElement = new GrouplikeItemElement(item, this.recordStore)
+        itemElement.on('download', () => this.emit('download', item))
+        itemElement.on('select', () => this.emit('select', item))
+        this.addInput(itemElement)
+      }
+    } else if (!this.grouplike.isTheQueue) {
+      this.addInput(new Button('(No items in this group)'))
     }
 
     if (wasSelected) {
-      this.root.select(this)
+      if (resetIndex) {
+        this.curIndex = 0
+        this.updateSelectedElement()
+      } else {
+        this.root.select(this)
+      }
     }
 
     this.fixLayout()
