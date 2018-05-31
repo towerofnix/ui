@@ -1,0 +1,13 @@
+TODO: A way to see the path of the currently selected item in any grouplike
+      element. Each item in the path should be a button that, when pressed,
+      makes the MAIN grouplike view navigate there.
+
+TODO: A "shuffle queue" button!
+
+TODO: A "clear queue" button.
+
+TODO: Don't immediately queue an entire group if it has more than 100 items -
+      ask first.
+
+TODO: A way to jump to an item with a particular name. Probably press "/".
+      It'd be nice if the closest match got highlighted while you were typing.

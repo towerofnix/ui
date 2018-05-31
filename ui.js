@@ -40,6 +40,7 @@ class AppElement extends FocusElement {
         this.queueGrouplikeItem(item)
       }
     })
+    this.grouplikeListingElement.on('queue', item => this.queueGrouplikeItem(item))
 
     this.queueGrouplike = {isTheQueue: true, items: []}
 
@@ -117,25 +118,38 @@ class AppElement extends FocusElement {
   }
 
   async queueGrouplikeItem(item, play = true) {
-    // TODO: Check if it's an item or a group
+    const newTrackIndex = this.queueGrouplike.items.length
 
-    const items = this.queueGrouplike.items
+    handleTrack: {
+      // For groups, just queue all children.
+      if (isGroup(item)) {
+        for (const child of item.items) {
+          await this.queueGrouplikeItem(child, false)
+        }
 
-    // You can't put the same track in the queue twice - we automatically
-    // remove the old entry. (You can't for a variety of technical reasons,
-    // but basically you either have the display all bork'd, or new tracks
-    // can't be added to the queue in the right order (because Object.assign
-    // is needed to fix the display, but then you end up with a new object
-    // that doesn't work with indexOf).)
-    if (items.includes(item)) {
-      items.splice(items.indexOf(item), 1)
+        break handleTrack
+      }
+
+      const items = this.queueGrouplike.items
+
+      // You can't put the same track in the queue twice - we automatically
+      // remove the old entry. (You can't for a variety of technical reasons,
+      // but basically you either have the display all bork'd, or new tracks
+      // can't be added to the queue in the right order (because Object.assign
+      // is needed to fix the display, but then you end up with a new object
+      // that doesn't work with indexOf).)
+      if (items.includes(item)) {
+        items.splice(items.indexOf(item), 1)
+      }
+
+      items.push(item)
+      this.queueListingElement.buildItems()
     }
 
-    items.push(item)
-    this.queueListingElement.buildItems()
-
-    if (play && !this.playingTrack) {
-      this.playGrouplikeItem(item)
+    // This is the first new track, if a group was queued.
+    const newTrack = this.queueGrouplike.items[newTrackIndex]
+    if (play && !this.playingTrack && newTrack) {
+      this.playGrouplikeItem(newTrack)
     }
   }
 
@@ -252,6 +266,7 @@ class GrouplikeListingElement extends ListScrollForm {
         const itemElement = new GrouplikeItemElement(item, this.recordStore)
         itemElement.on('download', () => this.emit('download', item))
         itemElement.on('select', () => this.emit('select', item))
+        itemElement.on('queue', () => this.emit('queue', item))
         this.addInput(itemElement)
       }
     } else if (!this.grouplike.isTheQueue) {
@@ -261,6 +276,7 @@ class GrouplikeListingElement extends ListScrollForm {
     if (wasSelected) {
       if (resetIndex) {
         this.curIndex = 0
+        this.scrollItems = 0
         this.updateSelectedElement()
       } else {
         this.root.select(this)
@@ -320,11 +336,11 @@ class GrouplikeItemElement extends Button {
 
   keyPressed(keyBuf) {
     // TODO: Helper function for this
-    if (keyBuf[0] === 'd'.charCodeAt(0) || keyBuf[0] === 'D'.charCodeAt(0)) {
+    if (telc.isCaselessLetter(keyBuf, 'd')) {
       this.emit('download')
-    }
-
-    if (telc.isSelect(keyBuf)) {
+    } else if (telc.isCaselessLetter(keyBuf, 'q')) {
+      this.emit('queue')
+    } else if (telc.isSelect(keyBuf)) {
       this.emit('select')
     }
   }
