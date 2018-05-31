@@ -55,7 +55,7 @@ async function main() {
     ]
   }
 
-  // let grouplike = require('./flat.json')
+  // grouplike = require('./flat.json')
 
   grouplike = updatePlaylistFormat(grouplike)
 

@@ -3,8 +3,10 @@ const { getPlayer } = require('./players')
 const { parentSymbol } = require('./playlist-utils')
 const ansi = require('./tui-lib/util/ansi')
 const Button = require('./tui-lib/ui/form/Button')
+const DisplayElement = require('./tui-lib/ui/DisplayElement')
 const FocusElement = require('./tui-lib/ui/form/FocusElement')
 const Form = require('./tui-lib/ui/form/Form')
+const Label = require('./tui-lib/ui/Label')
 const ListScrollForm = require('./tui-lib/ui/form/ListScrollForm')
 const Pane = require('./tui-lib/ui/Pane')
 const RecordStore = require('./record-store')
@@ -41,10 +43,19 @@ class AppElement extends FocusElement {
     this.form.addInput(this.queueListingElement, false)
 
     this.queueListingElement.on('select', item => this.playGrouplikeItem(item))
+
+    this.playbackPane = new Pane()
+    this.addChild(this.playbackPane)
+
+    this.playbackInfoElement = new PlaybackInfoElement()
+    this.playbackPane.addChild(this.playbackInfoElement)
   }
 
   async setup() {
     this.player = await getPlayer()
+    this.player.on('printStatusLine', data => {
+      this.playbackInfoElement.updateProgress(data)
+    })
   }
 
   async shutdown() {
@@ -57,16 +68,17 @@ class AppElement extends FocusElement {
     this.h = this.parent.contentH
 
     this.paneLeft.w = Math.max(Math.floor(0.8 * this.contentW), this.contentW - 80)
-    this.paneLeft.h = this.contentH
+    this.paneLeft.h = this.contentH - 4
     this.paneRight.x = this.paneLeft.right
     this.paneRight.w = this.contentW - this.paneLeft.right
-    this.paneRight.h = this.contentH
+    this.paneRight.h = this.paneLeft.h
+    this.playbackPane.y = this.paneLeft.bottom
+    this.playbackPane.w = this.contentW
+    this.playbackPane.h = this.contentH - this.playbackPane.y
 
-    this.grouplikeListingElement.w = this.paneLeft.contentW
-    this.grouplikeListingElement.h = this.paneLeft.contentH
-
-    this.queueListingElement.w = this.paneRight.contentW
-    this.queueListingElement.h = this.paneRight.contentH
+    this.grouplikeListingElement.fillParent()
+    this.queueListingElement.fillParent()
+    this.playbackInfoElement.fillParent()
   }
 
   keyPressed(keyBuf) {
@@ -149,6 +161,7 @@ class AppElement extends FocusElement {
     await this.player.kill()
     this.recordStore.getRecord(item).playing = true
     this.playingTrack = item
+    this.playbackInfoElement.updateTrack(item)
     try {
       await this.player.playFile(downloadFile)
     } finally {
@@ -255,9 +268,9 @@ class GrouplikeItemElement extends Button {
     writable.write(ansi.moveCursor(this.absTop, this.absLeft))
     this.drawX = this.x
     this.writeStatus(writable)
+    writable.write(this.item.name.slice(0, this.w - this.drawX))
     this.drawX += this.item.name.length
-    writable.write(this.item.name)
-    writable.write(' '.repeat(this.w - this.drawX))
+    writable.write(' '.repeat(Math.max(0, this.w - this.drawX)))
 
     writable.write(ansi.resetAttributes())
   }
@@ -290,6 +303,42 @@ class GrouplikeItemElement extends Button {
     if (telc.isSelect(keyBuf)) {
       this.emit('select')
     }
+  }
+}
+
+class PlaybackInfoElement extends DisplayElement {
+  constructor() {
+    super()
+
+    this.progressBarLabel = new Label('')
+    this.addChild(this.progressBarLabel)
+
+    this.progressTextLabel = new Label('')
+    this.addChild(this.progressTextLabel)
+
+    this.trackNameLabel = new Label('')
+    this.addChild(this.trackNameLabel)
+  }
+
+  fixLayout() {
+    const centerX = el => el.x = Math.round((this.w - el.w) / 2)
+    centerX(this.progressTextLabel)
+    centerX(this.trackNameLabel)
+
+    this.trackNameLabel.y = 0
+    this.progressBarLabel.y = 1
+    this.progressTextLabel.y = this.progressBarLabel.y
+  }
+
+  updateProgress({timeDone, timeLeft, duration, lenSecTotal, curSecTotal}) {
+    this.progressBarLabel.text = '-'.repeat(Math.floor(this.w / lenSecTotal * curSecTotal))
+    this.progressTextLabel.text = timeDone + ' / ' + duration
+    this.fixLayout()
+  }
+
+  updateTrack(track) {
+    this.trackNameLabel.text = track.name
+    this.fixLayout()
   }
 }
 

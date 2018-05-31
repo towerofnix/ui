@@ -41,7 +41,7 @@ function getTimeStrings({curHour, curMin, curSec, lenHour, lenMin, lenSec}) {
     duration = `${lenMin}:${lenSec}`
   }
 
-  return {percentDone, timeDone, timeLeft, duration}
+  return {percentDone, timeDone, timeLeft, duration, curSecTotal, lenSecTotal}
 }
 
 class Player extends EventEmitter {
@@ -92,7 +92,7 @@ class Player extends EventEmitter {
 
 module.exports.MPVPlayer = class extends Player {
   getMPVOptions(file) {
-    return ['--no-audio-display', file]
+    return ['--no-video', file]
   }
 
   playFile(file) {
