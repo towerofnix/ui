@@ -70,12 +70,32 @@ class AppElement extends FocusElement {
   }
 
   keyPressed(keyBuf) {
-    if (keyBuf[0] === 0x03 || keyBuf[0] === 'q'.charCodeAt(0) || keyBuf[0] === 'Q'.charCodeAt(0)) {
+    if (keyBuf[0] === 0x03 || telc.isCaselessLetter(keyBuf, 'q')) {
       this.shutdown()
       return
     }
 
-    super.keyPressed(keyBuf)
+    if (telc.isRight(keyBuf) || telc.isCaselessLetter(keyBuf, 'l')) {
+      this.seekAhead(10)
+    } else if (telc.isLeft(keyBuf) || telc.isCaselessLetter(keyBuf, 'j')) {
+      this.seekBack(10)
+    } else if (telc.isCaselessLetter(keyBuf, 'p') || telc.isCaselessLetter(keyBuf, 'k')) {
+      this.togglePause()
+    } else {
+      super.keyPressed(keyBuf)
+    }
+  }
+
+  seekAhead(seconds) {
+    this.player.seekAhead(seconds)
+  }
+
+  seekBack(seconds) {
+    this.player.seekBack(seconds)
+  }
+
+  togglePause() {
+    this.player.togglePause()
   }
 
   async queueGrouplikeItem(item, play = true) {
