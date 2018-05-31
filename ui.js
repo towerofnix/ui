@@ -78,7 +78,7 @@ class AppElement extends FocusElement {
     super.keyPressed(keyBuf)
   }
 
-  async queueGrouplikeItem(item) {
+  async queueGrouplikeItem(item, play = true) {
     // TODO: Check if it's an item or a group
 
     const items = this.queueGrouplike.items
@@ -96,7 +96,7 @@ class AppElement extends FocusElement {
     items.push(item)
     this.queueListingElement.buildItems()
 
-    if (!this.playingTrack) {
+    if (play && !this.playingTrack) {
       this.playGrouplikeItem(item)
     }
   }
@@ -164,7 +164,7 @@ class AppElement extends FocusElement {
       if (!nextItem) {
         return
       }
-      this.queueGrouplikeItem(nextItem)
+      this.queueGrouplikeItem(nextItem, false)
       queueIndex = queue.items.length - 1
     }
 
