@@ -256,7 +256,10 @@ class GrouplikeListingElement extends ListScrollForm {
     if (parent) {
       const upButton = new Button('Up (to ' + (parent.name || 'unnamed group') + ')')
       upButton.on('pressed', () => {
+        const oldGrouplike = this.grouplike
         this.loadGrouplike(parent)
+        this.curIndex = this.inputs.findIndex(inp => inp.item === oldGrouplike) || this.firstItemIndex
+        this.updateSelectedElement()
       })
       this.addInput(upButton)
     }
@@ -275,7 +278,7 @@ class GrouplikeListingElement extends ListScrollForm {
 
     if (wasSelected) {
       if (resetIndex) {
-        this.curIndex = Math.min(this.inputs.length, 1)
+        this.curIndex = this.firstItemIndex
         this.scrollItems = 0
         this.updateSelectedElement()
       } else {
@@ -284,6 +287,10 @@ class GrouplikeListingElement extends ListScrollForm {
     }
 
     this.fixLayout()
+  }
+
+  get firstItemIndex() {
+    return Math.min(this.inputs.length, 1)
   }
 }
 
