@@ -37,7 +37,7 @@ class AppElement extends FocusElement {
       if (isGroup(item)) {
         this.grouplikeListingElement.loadGrouplike(item)
       } else {
-        this.queueGrouplikeItem(item)
+        this.playGrouplikeItem(item)
       }
     })
     this.grouplikeListingElement.on('queue', item => this.queueGrouplikeItem(item))
@@ -117,7 +117,7 @@ class AppElement extends FocusElement {
     this.player.togglePause()
   }
 
-  async queueGrouplikeItem(item, play = true) {
+  async queueGrouplikeItem(item, play = true, afterItem = null) {
     const newTrackIndex = this.queueGrouplike.items.length
 
     handleTrack: {
@@ -142,7 +142,12 @@ class AppElement extends FocusElement {
         items.splice(items.indexOf(item), 1)
       }
 
-      items.push(item)
+      if (afterItem && items.includes(afterItem)) {
+        items.splice(items.indexOf(afterItem) + 1, 0, item)
+      } else {
+        items.push(item)
+      }
+
       this.queueListingElement.buildItems()
     }
 
@@ -164,7 +169,7 @@ class AppElement extends FocusElement {
     }
   }
 
-  async playGrouplikeItem(item) {
+  async playGrouplikeItem(item, shouldQueue = true) {
     if (this.player === null) {
       throw new Error('Attempted to play before a player was loaded')
     }
@@ -174,6 +179,10 @@ class AppElement extends FocusElement {
     this.once('playing new track', () => {
       playingThisTrack = false
     })
+
+    if (shouldQueue) {
+      this.queueGrouplikeItem(item, false, this.playingTrack)
+    }
 
     // TODO: Check if it's an item or a group
 
@@ -221,7 +230,7 @@ class AppElement extends FocusElement {
       queueIndex = queue.items.length - 1
     }
 
-    this.playGrouplikeItem(queue.items[queueIndex])
+    this.playGrouplikeItem(queue.items[queueIndex], false)
   }
 }
 
