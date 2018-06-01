@@ -260,6 +260,7 @@ class GrouplikeListingElement extends ListScrollForm {
         this.loadGrouplike(parent)
         this.curIndex = this.inputs.findIndex(inp => inp.item === oldGrouplike) || this.firstItemIndex
         this.updateSelectedElement()
+        this.scrollSelectedElementIntoView()
       })
       this.addInput(upButton)
     }
