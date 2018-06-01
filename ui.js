@@ -154,7 +154,7 @@ class AppElement extends FocusElement {
     // This is the first new track, if a group was queued.
     const newTrack = this.queueGrouplike.items[newTrackIndex]
     if (play && !this.playingTrack && newTrack) {
-      this.playGrouplikeItem(newTrack)
+      this.playGrouplikeItem(newTrack, false)
     }
   }
 
