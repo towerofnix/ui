@@ -323,6 +323,11 @@ class GrouplikeItemElement extends Button {
     }
 
     writable.write(ansi.moveCursor(this.absTop, this.absLeft))
+
+    if (isGroup(this.item)) {
+      writable.write(ansi.setAttributes([ansi.C_BLUE, ansi.A_BRIGHT]))
+    }
+
     this.drawX = this.x
     this.writeStatus(writable)
     writable.write(this.item.name.slice(0, this.w - this.drawX))
@@ -341,7 +346,9 @@ class GrouplikeItemElement extends Button {
     const record = this.recordStore.getRecord(this.item)
 
     writable.write(' ')
-    if (record.downloading) {
+    if (isGroup(this.item)) {
+      writable.write('G')
+    } else if (record.downloading) {
       writable.write(braille[Math.floor(Date.now() / 250) % 6])
     } else if (record.playing) {
       writable.write('\u25B6')
