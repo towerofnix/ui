@@ -275,7 +275,7 @@ class GrouplikeListingElement extends ListScrollForm {
 
     if (wasSelected) {
       if (resetIndex) {
-        this.curIndex = 0
+        this.curIndex = Math.min(this.inputs.length, 1)
         this.scrollItems = 0
         this.updateSelectedElement()
       } else {
