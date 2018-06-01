@@ -160,7 +160,12 @@ class AppElement extends FocusElement {
   }
 
   async downloadGrouplikeItem(item) {
-    // TODO: Check if it's an item or a group
+    if (isGroup(item)) {
+      // TODO: Download all children (recursively), show a confirmation prompt
+      // if there are a lot of items (remember to flatten).
+      return
+    }
+
     const arg = item.downloaderArg
     this.recordStore.getRecord(item).downloading = true
     try {
