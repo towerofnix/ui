@@ -117,17 +117,17 @@ class AppElement extends FocusElement {
     this.player.togglePause()
   }
 
-  async queueGrouplikeItem(item, play = true, afterItem = null) {
+  async queueGrouplikeItem(topItem, play = true, afterItem = null) {
     const newTrackIndex = this.queueGrouplike.items.length
 
-    handleTrack: {
+    const recursivelyAddTracks = item => {
       // For groups, just queue all children.
       if (isGroup(item)) {
         for (const child of item.items) {
-          await this.queueGrouplikeItem(child, false)
+          recursivelyAddTracks(child)
         }
 
-        break handleTrack
+        return
       }
 
       const items = this.queueGrouplike.items
@@ -147,9 +147,10 @@ class AppElement extends FocusElement {
       } else {
         items.push(item)
       }
-
-      this.queueListingElement.buildItems()
     }
+
+    recursivelyAddTracks(topItem)
+    this.queueListingElement.buildItems()
 
     // This is the first new track, if a group was queued.
     const newTrack = this.queueGrouplike.items[newTrackIndex]
