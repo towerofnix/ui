@@ -11,3 +11,6 @@ TODO: A way to jump to an item with a particular name. Probably press "/".
 
 TODO: "Queue to play next"... maybe also a cursor in the queue list, which
       would tell after what track to place newly-queued items?
+
+TODO: Scroll to the selected track once it starts playing when selected from
+      the queue.

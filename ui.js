@@ -231,6 +231,9 @@ class AppElement extends FocusElement {
     this.recordStore.getRecord(item).playing = true
     this.playingTrack = item
     this.playbackInfoElement.updateTrack(item)
+    if (!this.queueListingElement.isSelected) {
+      this.queueListingElement.selectAndShow(item)
+    }
     try {
       await this.player.playFile(downloadFile)
     } finally {
@@ -319,8 +322,7 @@ class GrouplikeListingElement extends ListScrollForm {
       throw new Error('Attempted to call buildItems before a grouplike was loaded')
     }
 
-    const wasSelected = (this.root.selected &&
-      this.root.selected.directAncestors.includes(this))
+    const wasSelected = this.isSelected
 
     while (this.inputs.length) {
       this.removeInput(this.inputs[0])
@@ -365,9 +367,25 @@ class GrouplikeListingElement extends ListScrollForm {
     this.fixLayout()
   }
 
+  selectAndShow(item) {
+    const index = this.inputs.findIndex(inp => inp.item === item)
+    if (index >= 0) {
+      this.curIndex = index
+      if (this.isSelected) {
+        this.updateSelectedElement()
+      }
+      this.scrollSelectedElementIntoView()
+    }
+  }
+
   get firstItemIndex() {
     return Math.min(this.inputs.length, 1)
   }
+
+  get isSelected() {
+    return this.root.selected && this.root.selected.directAncestors.includes(this)
+  }
+
 }
 
 class GrouplikeItemElement extends Button {
