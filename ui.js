@@ -106,6 +106,10 @@ class AppElement extends FocusElement {
       this.seekBack(10)
     } else if (telc.isCaselessLetter(keyBuf, 'p') || telc.isCaselessLetter(keyBuf, 'k')) {
       this.togglePause()
+    } else if (telc.isShiftUp(keyBuf)) {
+      this.playPreviousTrack(this.playingTrack)
+    } else if (telc.isShiftDown(keyBuf)) {
+      this.playNextTrack(this.playingTrack)
     } else {
       super.keyPressed(keyBuf)
     }
@@ -159,7 +163,9 @@ class AppElement extends FocusElement {
         items.splice(items.indexOf(item), 1)
       }
 
-      if (afterItem && items.includes(afterItem)) {
+      if (afterItem === 'FRONT') {
+        items.unshift(item)
+      } else if (afterItem && items.includes(afterItem)) {
         items.splice(items.indexOf(afterItem) + 1, 0, item)
       } else {
         items.push(item)
@@ -262,6 +268,31 @@ class AppElement extends FocusElement {
       }
       this.queueGrouplikeItem(nextItem, false)
       queueIndex = queue.items.length - 1
+    }
+
+    this.playGrouplikeItem(queue.items[queueIndex], false)
+  }
+
+  playPreviousTrack(track) {
+    const queue = this.queueGrouplike
+    let queueIndex = queue.items.indexOf(track)
+    if (queueIndex === -1) {
+      queueIndex = queue.items.length
+    }
+    queueIndex--
+
+    if (queueIndex < 0) {
+      const parent = track[parentSymbol]
+      if (!parent) {
+        return
+      }
+      const index = parent.items.indexOf(track)
+      const previousItem = parent.items[index - 1]
+      if (!previousItem) {
+        return
+      }
+      this.queueGrouplikeItem(previousItem, false, 'FRONT')
+      queueIndex = 0
     }
 
     this.playGrouplikeItem(queue.items[queueIndex], false)
