@@ -18,6 +18,8 @@ class AppElement extends FocusElement {
 
     this.player = null
     this.recordStore = new RecordStore()
+    this.queueGrouplike = {isTheQueue: true, items: []}
+
 
     this.form = new Form()
     this.addChild(this.form)
@@ -32,24 +34,28 @@ class AppElement extends FocusElement {
     this.paneLeft.addChild(this.grouplikeListingElement)
     this.form.addInput(this.grouplikeListingElement, false)
 
-    this.grouplikeListingElement.on('download', item => this.downloadGrouplikeItem(item))
-    this.grouplikeListingElement.on('select', item => {
+    const handleSelectFromMain = item => {
       if (isGroup(item)) {
         this.grouplikeListingElement.loadGrouplike(item)
       } else {
         this.playGrouplikeItem(item)
       }
-    })
-    this.grouplikeListingElement.on('queue', item => this.queueGrouplikeItem(item))
+    }
 
-    this.queueGrouplike = {isTheQueue: true, items: []}
+    this.grouplikeListingElement.on('download', item => this.downloadGrouplikeItem(item))
+    this.grouplikeListingElement.on('select (enter)', item => handleSelectFromMain(item))
+    this.grouplikeListingElement.on('select (space)', item => this.handleSpacePressed(
+      () => handleSelectFromMain(item)))
+    this.grouplikeListingElement.on('queue', item => this.queueGrouplikeItem(item))
 
     this.queueListingElement = new GrouplikeListingElement(this.recordStore)
     this.queueListingElement.loadGrouplike(this.queueGrouplike)
     this.paneRight.addChild(this.queueListingElement)
     this.form.addInput(this.queueListingElement, false)
 
-    this.queueListingElement.on('select', item => this.playGrouplikeItem(item))
+    this.queueListingElement.on('select (enter)', item => this.playGrouplikeItem(item))
+    this.queueListingElement.on('select (space)', item => this.handleSpacePressed(
+      () => this.playGrouplikeItem(item)))
 
     this.playbackPane = new Pane()
     this.addChild(this.playbackPane)
@@ -102,6 +108,17 @@ class AppElement extends FocusElement {
       this.togglePause()
     } else {
       super.keyPressed(keyBuf)
+    }
+  }
+
+  handleSpacePressed(callback) {
+    // Pauses/resumes if a track is currently playing; otherwise, calls the
+    // callback function.
+
+    if (this.playingTrack) {
+      this.togglePause()
+    } else {
+      return callback()
     }
   }
 
@@ -192,7 +209,18 @@ class AppElement extends FocusElement {
 
     // TODO: Check if it's an item or a group
 
+    // If, by the time the track is downloaded, we're playing something
+    // different from when the download started, assume that we just want to
+    // keep listening to whatever new thing we started.
+
+    const oldTrack = this.playingTrack
+
     const downloadFile = await this.downloadGrouplikeItem(item)
+
+    if (this.playingTrack !== oldTrack) {
+      return
+    }
+
     await this.player.kill()
     this.recordStore.getRecord(item).playing = true
     this.playingTrack = item
@@ -284,7 +312,8 @@ class GrouplikeListingElement extends ListScrollForm {
       for (const item of this.grouplike.items) {
         const itemElement = new GrouplikeItemElement(item, this.recordStore)
         itemElement.on('download', () => this.emit('download', item))
-        itemElement.on('select', () => this.emit('select', item))
+        itemElement.on('select (space)', () => this.emit('select (space)', item))
+        itemElement.on('select (enter)', () => this.emit('select (enter)', item))
         itemElement.on('queue', () => this.emit('queue', item))
         this.addInput(itemElement)
       }
@@ -370,8 +399,10 @@ class GrouplikeItemElement extends Button {
       this.emit('download')
     } else if (telc.isCaselessLetter(keyBuf, 'q')) {
       this.emit('queue')
-    } else if (telc.isSelect(keyBuf)) {
-      this.emit('select')
+    } else if (telc.isSpace(keyBuf)) {
+      this.emit('select (space)')
+    } else if (telc.isEnter(keyBuf)) {
+      this.emit('select (enter)')
     }
   }
 }

@@ -1,7 +1,5 @@
 // omg I am tired of code
 
-const { getPlayer } = require('./players')
-const { getDownloaderFor } = require('./downloaders')
 const { AppElement } = require('./ui')
 const { updatePlaylistFormat } = require('./playlist-utils')
 const ansi = require('./tui-lib/util/ansi')
@@ -9,6 +7,11 @@ const CommandLineInterfacer = require('./tui-lib/util/CommandLineInterfacer')
 const EventEmitter = require('events')
 const Flushable = require('./tui-lib/util/Flushable')
 const Root = require('./tui-lib/ui/Root')
+
+// Hack to get around errors when piping many things to stdout/err
+// (from general-util promisifyProcess)
+process.stdout.setMaxListeners(Infinity)
+process.stderr.setMaxListeners(Infinity)
 
 process.on('unhandledRejection', error => {
   console.error(error.stack)
@@ -55,7 +58,7 @@ async function main() {
     ]
   }
 
-  grouplike = require('./library.json')
+  grouplike = require(process.argv[2] || './library.json')
 
   grouplike = updatePlaylistFormat(grouplike)
 

@@ -8,3 +8,6 @@ TODO: A "clear queue" button.
 
 TODO: A way to jump to an item with a particular name. Probably press "/".
       It'd be nice if the closest match got highlighted while you were typing.
+
+TODO: "Queue to play next"... maybe also a cursor in the queue list, which
+      would tell after what track to place newly-queued items?
