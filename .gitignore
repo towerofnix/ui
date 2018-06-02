@@ -1,3 +1,4 @@
 /node_modules
-/flat.json
-/giii.json
+/*.json
+!/.package.json
+!/.package-lock.json
