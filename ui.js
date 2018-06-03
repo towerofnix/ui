@@ -252,6 +252,10 @@ class AppElement extends FocusElement {
   }
 
   playNextTrack(track) {
+    if (!track) {
+      return
+    }
+
     const queue = this.queueGrouplike
     let queueIndex = queue.items.indexOf(track)
     if (queueIndex === -1) {
@@ -277,6 +281,10 @@ class AppElement extends FocusElement {
   }
 
   playPreviousTrack(track) {
+    if (!track) {
+      return
+    }
+
     const queue = this.queueGrouplike
     let queueIndex = queue.items.indexOf(track)
     if (queueIndex === -1) {
