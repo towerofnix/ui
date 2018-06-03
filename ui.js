@@ -81,7 +81,7 @@ class AppElement extends FocusElement {
     this.h = this.parent.contentH
 
     this.paneLeft.w = Math.max(Math.floor(0.8 * this.contentW), this.contentW - 80)
-    this.paneLeft.h = this.contentH - 4
+    this.paneLeft.h = this.contentH - 5
     this.paneRight.x = this.paneLeft.right
     this.paneRight.w = this.contentW - this.paneLeft.right
     this.paneRight.h = this.paneLeft.h
@@ -468,16 +468,21 @@ class PlaybackInfoElement extends DisplayElement {
 
     this.trackNameLabel = new Label('')
     this.addChild(this.trackNameLabel)
+
+    this.downloadLabel = new Label('')
+    this.addChild(this.downloadLabel)
   }
 
   fixLayout() {
     const centerX = el => el.x = Math.round((this.w - el.w) / 2)
     centerX(this.progressTextLabel)
     centerX(this.trackNameLabel)
+    centerX(this.downloadLabel)
 
     this.trackNameLabel.y = 0
     this.progressBarLabel.y = 1
     this.progressTextLabel.y = this.progressBarLabel.y
+    this.downloadLabel.y = 2
   }
 
   updateProgress({timeDone, timeLeft, duration, lenSecTotal, curSecTotal}) {
@@ -488,6 +493,7 @@ class PlaybackInfoElement extends DisplayElement {
 
   updateTrack(track) {
     this.trackNameLabel.text = track.name
+    this.downloadLabel.text = `(From: ${track.downloaderArg})`
     this.fixLayout()
   }
 }
