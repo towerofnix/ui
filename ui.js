@@ -312,6 +312,14 @@ class GrouplikeListingElement extends ListScrollForm {
     this.recordStore = recordStore
   }
 
+  keyPressed(keyBuf) {
+    if (telc.isEscape(keyBuf)) {
+      this.loadParentGrouplike()
+    } else {
+      return super.keyPressed(keyBuf)
+    }
+  }
+
   loadGrouplike(grouplike) {
     this.grouplike = grouplike
     this.buildItems(true)
@@ -331,13 +339,7 @@ class GrouplikeListingElement extends ListScrollForm {
     const parent = this.grouplike[parentSymbol]
     if (parent) {
       const upButton = new Button('Up (to ' + (parent.name || 'unnamed group') + ')')
-      upButton.on('pressed', () => {
-        const oldGrouplike = this.grouplike
-        this.loadGrouplike(parent)
-        this.curIndex = this.inputs.findIndex(inp => inp.item === oldGrouplike) || this.firstItemIndex
-        this.updateSelectedElement()
-        this.scrollSelectedElementIntoView()
-      })
+      upButton.on('pressed', () => this.loadParentGrouplike())
       this.addInput(upButton)
     }
 
@@ -367,6 +369,21 @@ class GrouplikeListingElement extends ListScrollForm {
     this.fixLayout()
   }
 
+  loadParentGrouplike() {
+    if (!this.grouplike) {
+      return
+    }
+
+    const parent = this.grouplike[parentSymbol]
+    if (parent) {
+      const oldGrouplike = this.grouplike
+      this.loadGrouplike(parent)
+      this.curIndex = this.inputs.findIndex(inp => inp.item === oldGrouplike) || this.firstItemIndex
+      this.updateSelectedElement()
+      this.scrollSelectedElementIntoView()
+    }
+  }
+
   selectAndShow(item) {
     const index = this.inputs.findIndex(inp => inp.item === item)
     if (index >= 0) {
@@ -385,7 +402,6 @@ class GrouplikeListingElement extends ListScrollForm {
   get isSelected() {
     return this.root.selected && this.root.selected.directAncestors.includes(this)
   }
-
 }
 
 class GrouplikeItemElement extends Button {
