@@ -23,8 +23,7 @@ async function main() {
   const size = await interfacer.getScreenSize()
 
   const flushable = new Flushable(process.stdout, true)
-  flushable.screenLines = size.lines
-  flushable.screenCols = size.cols
+  flushable.resizeScreen(size)
   flushable.shouldShowCompressionStatistics = process.argv.includes('--show-ansi-stats')
   flushable.write(ansi.clearScreen())
   flushable.flush()
@@ -32,6 +31,13 @@ async function main() {
   const root = new Root(interfacer)
   root.w = size.width
   root.h = size.height
+
+  interfacer.on('resize', newSize => {
+    root.w = newSize.width
+    root.h = newSize.height
+    flushable.resizeScreen(newSize)
+    root.fixAllLayout()
+  })
 
   const appElement = new AppElement()
   root.addChild(appElement)

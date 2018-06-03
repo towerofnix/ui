@@ -14,3 +14,6 @@ TODO: "Queue to play next"... maybe also a cursor in the queue list, which
 
 TODO: Scroll to the selected track once it starts playing when selected from
       the queue.
+
+TODO: process.on('SIGWINCH', () => ...) -- detect terminal resize!!
+      (Done!)
