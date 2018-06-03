@@ -64,7 +64,9 @@ async function main() {
     ]
   }
 
-  grouplike = require(process.argv[2] || './library.json')
+  if (process.argv[2]) {
+    grouplike = require(process.argv[2])
+  }
 
   grouplike = updatePlaylistFormat(grouplike)
 
