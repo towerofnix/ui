@@ -53,9 +53,9 @@ class AppElement extends FocusElement {
     this.paneRight.addChild(this.queueListingElement)
     this.form.addInput(this.queueListingElement, false)
 
-    this.queueListingElement.on('select (enter)', item => this.playGrouplikeItem(item))
+    this.queueListingElement.on('select (enter)', item => this.playGrouplikeItem(item, false))
     this.queueListingElement.on('select (space)', item => this.handleSpacePressed(
-      () => this.playGrouplikeItem(item)))
+      () => this.playGrouplikeItem(item, false)))
 
     this.playbackPane = new Pane()
     this.addChild(this.playbackPane)
