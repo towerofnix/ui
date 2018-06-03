@@ -5,7 +5,7 @@
 * <kbd><kbd>Ctrl</kbd>+<kbd>C</kbd></kbd> - exit
 * <kbd>Up</kbd> - select previous item in a listing
 * <kbd>Down</kbd> - select next item in a listing
-* <kbd>PageUp</kbd> and </kbd>PageDown</kbd> - navigate up or down a visible-page-length of a listing (the usual meaning of page-up/down!)
+* <kbd>PageUp</kbd> and <kbd>PageDown</kbd> - navigate up or down a visible-page-length of a listing (the usual meaning of page-up/down!)
 * <kbd>Tab</kbd> - switch between the main listing and the queue
 * <kbd>Enter</kbd> - play the selected track
 * <kbd><kbd>Shift</kbd>+<kbd>Up</kbd></kbd> - play previous track
