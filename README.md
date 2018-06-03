@@ -1,4 +1,4 @@
-![Screenshot of the player](README.png)
+![Screenshot of the player](screenshot.png)
 
 ## keybindings
 
@@ -14,5 +14,6 @@
 * <kbd>Left</kbd> or <kbd>j</kbd> - seek back
 * **In the main listing:**
   * <kbd>Enter</kbd> - if the selected item is a group, enter it; otherwise play it
+  * <kbd>Backspace</kbd> - leave the current group (if in one)
   * <kbd>q</kbd> - queue the selected track to play after any other items in the queue (usually after the current track)
   * <kbd>d</kbd> - download the selected track (but don't play it)
