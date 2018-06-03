@@ -313,7 +313,7 @@ class GrouplikeListingElement extends ListScrollForm {
   }
 
   keyPressed(keyBuf) {
-    if (telc.isEscape(keyBuf)) {
+    if (telc.isBackspace(keyBuf)) {
       this.loadParentGrouplike()
     } else {
       return super.keyPressed(keyBuf)
