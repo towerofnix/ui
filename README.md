@@ -6,6 +6,8 @@
 * <kbd>Up</kbd> and <kbd>Down</kbd> - select previous or next item in a listing
 * <kbd>PageUp</kbd> and <kbd>PageDown</kbd> - navigate up or down a visible-page-length of a listing (the usual meaning of page-up/down!)
 * <kbd>Tab</kbd> and <kbd><kbd>Shift</kbd>+<kbd>Tab</kbd></kbd> - switch between UI elements
+* <kbd>1</kbd> - focus the main track/group listing
+* <kbd>2</kbd> - focus the queue listing
 * <kbd>Enter</kbd> - play the selected track
 * <kbd><kbd>Shift</kbd>+<kbd>Up</kbd></kbd> - play previous track
 * <kbd><kbd>Shift</kbd>+<kbd>Down</kbd></kbd> - play next track

@@ -137,6 +137,12 @@ class AppElement extends FocusElement {
       this.playPreviousTrack(this.playingTrack)
     } else if (telc.isShiftDown(keyBuf)) {
       this.playNextTrack(this.playingTrack)
+    } else if (telc.isCharacter(keyBuf, '1') && this.grouplikeListingElement.selectable) {
+      this.form.curIndex = this.form.inputs.indexOf(this.grouplikeListingElement)
+      this.form.updateSelectedElement()
+    } else if (telc.isCharacter(keyBuf, '2') && this.queueListingElement.selectable) {
+      this.form.curIndex = this.form.inputs.indexOf(this.queueListingElement)
+      this.form.updateSelectedElement()
     } else {
       super.keyPressed(keyBuf)
     }
