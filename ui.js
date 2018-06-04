@@ -1,6 +1,6 @@
 const { getDownloaderFor } = require('./downloaders')
 const { getPlayer } = require('./players')
-const { parentSymbol, isGroup } = require('./playlist-utils')
+const { parentSymbol, isGroup, isTrack, getItemPath } = require('./playlist-utils')
 const ansi = require('./tui-lib/util/ansi')
 const Button = require('./tui-lib/ui/form/Button')
 const DisplayElement = require('./tui-lib/ui/DisplayElement')
@@ -48,6 +48,21 @@ class AppElement extends FocusElement {
       () => handleSelectFromMain(item)))
     this.grouplikeListingElement.on('queue', item => this.queueGrouplikeItem(item))
 
+    const handleSelectFromPathElement = item => {
+      this.form.curIndex = this.form.inputs.indexOf(this.grouplikeListingElement)
+      this.root.select(this.grouplikeListingElement)
+      if (isGroup(item)) {
+        this.grouplikeListingElement.loadGrouplike(item)
+      } else if (item[parentSymbol]) {
+        this.grouplikeListingElement.loadGrouplike(item[parentSymbol])
+        this.grouplikeListingElement.selectAndShow(item)
+      }
+    }
+
+    this.paneLeft.addChild(this.grouplikeListingElement.pathElement)
+    this.form.addInput(this.grouplikeListingElement.pathElement, false)
+    this.grouplikeListingElement.pathElement.on('select', item => handleSelectFromPathElement(item))
+
     this.queueListingElement = new GrouplikeListingElement(this.recordStore)
     this.queueListingElement.loadGrouplike(this.queueGrouplike)
     this.paneRight.addChild(this.queueListingElement)
@@ -56,6 +71,10 @@ class AppElement extends FocusElement {
     this.queueListingElement.on('select (enter)', item => this.playGrouplikeItem(item, false))
     this.queueListingElement.on('select (space)', item => this.handleSpacePressed(
       () => this.playGrouplikeItem(item, false)))
+
+    this.paneRight.addChild(this.queueListingElement.pathElement)
+    this.form.addInput(this.queueListingElement.pathElement, false)
+    this.queueListingElement.pathElement.on('select', item => handleSelectFromPathElement(item))
 
     this.playbackPane = new Pane()
     this.addChild(this.playbackPane)
@@ -89,8 +108,16 @@ class AppElement extends FocusElement {
     this.playbackPane.w = this.contentW
     this.playbackPane.h = this.contentH - this.playbackPane.y
 
-    this.grouplikeListingElement.fillParent()
-    this.queueListingElement.fillParent()
+    const fixListingLayout = listing => {
+      listing.fillParent()
+      listing.h--
+      listing.pathElement.y = listing.parent.contentH - 1
+      listing.pathElement.w = listing.parent.contentW
+    }
+
+    fixListingLayout(this.grouplikeListingElement)
+    fixListingLayout(this.queueListingElement)
+
     this.playbackInfoElement.fillParent()
   }
 
@@ -318,6 +345,8 @@ class GrouplikeListingElement extends ListScrollForm {
 
     this.grouplike = null
     this.recordStore = recordStore
+
+    this.pathElement = new PathElement()
   }
 
   keyPressed(keyBuf) {
@@ -409,6 +438,18 @@ class GrouplikeListingElement extends ListScrollForm {
     }
   }
 
+  set curIndex(newIndex) {
+    this._curIndex = newIndex
+
+    if (this.pathElement && this.inputs[this.curIndex]) {
+      this.pathElement.showItem(this.inputs[this.curIndex].item)
+    }
+  }
+
+  get curIndex() {
+    return this._curIndex
+  }
+
   get firstItemIndex() {
     return Math.min(this.inputs.length, 1)
   }
@@ -483,6 +524,68 @@ class GrouplikeItemElement extends Button {
     } else if (telc.isEnter(keyBuf)) {
       this.emit('select (enter)')
     }
+  }
+}
+
+class PathElement extends ListScrollForm {
+  constructor() {
+    super('horizontal')
+    this.captureTab = false
+  }
+
+  showItem(item) {
+    while (this.inputs.length) {
+      this.removeInput(this.inputs[0])
+    }
+
+    if (!isTrack(item) && !isGroup(item)) {
+      return
+    }
+
+    const itemPath = getItemPath(item)
+
+    for (const pathItem of itemPath) {
+      const isLast = pathItem === itemPath[itemPath.length - 1]
+      const element = new PathItemElement(pathItem, isLast)
+      element.on('select', () => this.emit('select', pathItem))
+      element.fixLayout()
+      this.addInput(element)
+    }
+
+    this.curIndex = this.inputs.length - 1
+
+    this.scrollToEnd()
+    this.fixLayout()
+  }
+}
+
+class PathItemElement extends FocusElement {
+  constructor(item, isLast) {
+    super()
+
+    this.item = item
+    this.isLast = isLast
+
+    this.button = new Button(item.name || '(Unnamed)')
+    this.addChild(this.button)
+
+    this.button.on('pressed', () => {
+      this.emit('select')
+    })
+
+    this.arrowLabel = new Label(isLast ? '' : ' > ')
+    this.addChild(this.arrowLabel)
+  }
+
+  focused() {
+    this.root.select(this.button)
+  }
+
+  fixLayout() {
+    this.button.fixLayout()
+    this.arrowLabel.fixLayout()
+    this.w = this.button.w + this.arrowLabel.w
+    this.arrowLabel.x = this.button.right
   }
 }
 

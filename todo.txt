@@ -1,6 +1,7 @@
 TODO: A way to see the path of the currently selected item in any grouplike
       element. Each item in the path should be a button that, when pressed,
       makes the MAIN grouplike view navigate there.
+      (Done!)
 
 TODO: A "shuffle queue" button!
 
