@@ -9,6 +9,7 @@
   "author": "",
   "license": "GPL-3.0",
   "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
     "command-exists": "^1.2.6",
     "fifo-js": "^2.1.0",
     "fs-extra": "^6.0.1",
@@ -16,6 +17,7 @@
     "js-base64": "^2.4.5",
     "mkdirp": "^0.5.1",
     "node-fetch": "^2.1.2",
+    "node-natural-sort": "^0.8.6",
     "sanitize-filename": "^1.6.1",
     "tempy": "^0.2.1"
   }

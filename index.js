@@ -2,6 +2,7 @@
 
 const { AppElement } = require('./ui')
 const { updatePlaylistFormat } = require('./playlist-utils')
+const processSmartPlaylist = require('./smart-playlist')
 const ansi = require('./tui-lib/util/ansi')
 const CommandLineInterfacer = require('./tui-lib/util/CommandLineInterfacer')
 const EventEmitter = require('events')
@@ -65,10 +66,13 @@ async function main() {
   }
 
   if (process.argv[2]) {
+    flushable.write(ansi.moveCursor(0, 0))
+    flushable.write('Opening playlist...')
+    flushable.flush()
     grouplike = require(process.argv[2])
   }
 
-  grouplike = updatePlaylistFormat(grouplike)
+  grouplike = await processSmartPlaylist(grouplike)
 
   appElement.grouplikeListingElement.loadGrouplike(grouplike)
 

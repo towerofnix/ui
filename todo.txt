@@ -23,3 +23,5 @@ TODO: Pressing enter in the queue seems to not be doing the right thing?
       It should NOT move the selected item anywhere in the queue; it should
       just select and play that track.
       (Done!)
+
+TODO: iTunes downloader - test this.
