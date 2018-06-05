@@ -1,6 +1,7 @@
 const { getDownloaderFor } = require('./downloaders')
 const { getPlayer } = require('./players')
 const { parentSymbol, isGroup, isTrack, getItemPath } = require('./playlist-utils')
+const { shuffleArray } = require('./general-util')
 const ansi = require('./tui-lib/util/ansi')
 const Button = require('./tui-lib/ui/form/Button')
 const DisplayElement = require('./tui-lib/ui/DisplayElement')
@@ -143,9 +144,21 @@ class AppElement extends FocusElement {
     } else if (telc.isCharacter(keyBuf, '2') && this.queueListingElement.selectable) {
       this.form.curIndex = this.form.inputs.indexOf(this.queueListingElement)
       this.form.updateSelectedElement()
+    } else if (telc.isCaselessLetter(keyBuf, 's')) {
+      this.shuffleQueue()
     } else {
       super.keyPressed(keyBuf)
     }
+  }
+
+  shuffleQueue() {
+    const queue = this.queueGrouplike
+    const index = queue.items.indexOf(this.playingTrack) + 1 // This is 0 if no track is playing
+    const initialItems = queue.items.slice(0, index)
+    const remainingItems = queue.items.slice(index)
+    const newItems = initialItems.concat(shuffleArray(remainingItems))
+    queue.items = newItems
+    this.queueListingElement.buildItems()
   }
 
   handleSpacePressed(callback) {

@@ -63,3 +63,27 @@ module.exports.downloadPlaylistFromOptionValue = function(arg) {
     return downloadPlaylistFromLocalPath(arg)
   }
 }
+
+module.exports.shuffleArray = function(array) {
+  // Shuffles the items in an array. Returns a new array (does not modify the
+  // passed array). Super-interesting post on how this algorithm works:
+  // https://bost.ocks.org/mike/shuffle/
+
+  const workingArray = array.slice(0)
+
+  let m = array.length
+
+  while (m) {
+    let i = Math.floor(Math.random() * m)
+    m--
+
+    // Stupid lol; avoids the need of a temporary variable!
+    Object.assign(workingArray, {
+      [m]: workingArray[i],
+      [i]: workingArray[m]
+    })
+  }
+
+  return workingArray
+}
+

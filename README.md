@@ -14,6 +14,7 @@
 * <kbd>Space</kbd>, <kbd>p</kbd>, or <kbd>k</kbd> - toggle pause
 * <kbd>Right</kbd> or <kbd>l</kbd> - seek ahead
 * <kbd>Left</kbd> or <kbd>j</kbd> - seek back
+* <kbd>s</kbd> - shuffle the queue
 * **In the main listing:**
   * <kbd>Enter</kbd> - if the selected item is a group, enter it; otherwise play it
   * <kbd>Backspace</kbd> - leave the current group (if in one)

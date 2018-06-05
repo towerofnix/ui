@@ -4,6 +4,8 @@ TODO: A way to see the path of the currently selected item in any grouplike
       (Done!)
 
 TODO: A "shuffle queue" button!
+      (Half-way done -- the functionality is there, press "S", but there's no
+      button for it yet.)
 
 TODO: A "clear queue" button.
 
