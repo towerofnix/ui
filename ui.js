@@ -50,8 +50,7 @@ class AppElement extends FocusElement {
     this.grouplikeListingElement.on('queue', item => this.queueGrouplikeItem(item))
 
     const handleSelectFromPathElement = item => {
-      this.form.curIndex = this.form.inputs.indexOf(this.grouplikeListingElement)
-      this.root.select(this.grouplikeListingElement)
+      this.form.selectInput(this.grouplikeListingElement)
       if (isGroup(item)) {
         this.grouplikeListingElement.loadGrouplike(item)
       } else if (item[parentSymbol]) {
@@ -64,7 +63,7 @@ class AppElement extends FocusElement {
     this.form.addInput(this.grouplikeListingElement.pathElement, false)
     this.grouplikeListingElement.pathElement.on('select', item => handleSelectFromPathElement(item))
 
-    this.queueListingElement = new GrouplikeListingElement(this.recordStore)
+    this.queueListingElement = new QueueListingElement(this.recordStore)
     this.queueListingElement.loadGrouplike(this.queueGrouplike)
     this.paneRight.addChild(this.queueListingElement)
     this.form.addInput(this.queueListingElement, false)
@@ -72,6 +71,8 @@ class AppElement extends FocusElement {
     this.queueListingElement.on('select (enter)', item => this.playGrouplikeItem(item, false))
     this.queueListingElement.on('select (space)', item => this.handleSpacePressed(
       () => this.playGrouplikeItem(item, false)))
+    this.queueListingElement.on('shuffle', () => this.shuffleQueue())
+    this.queueListingElement.on('clear', () => this.clearQueue())
 
     this.paneRight.addChild(this.queueListingElement.pathElement)
     this.form.addInput(this.queueListingElement.pathElement, false)
@@ -144,8 +145,6 @@ class AppElement extends FocusElement {
     } else if (telc.isCharacter(keyBuf, '2') && this.queueListingElement.selectable) {
       this.form.curIndex = this.form.inputs.indexOf(this.queueListingElement)
       this.form.updateSelectedElement()
-    } else if (telc.isCaselessLetter(keyBuf, 's')) {
-      this.shuffleQueue()
     } else {
       super.keyPressed(keyBuf)
     }
@@ -159,6 +158,13 @@ class AppElement extends FocusElement {
     const newItems = initialItems.concat(shuffleArray(remainingItems))
     queue.items = newItems
     this.queueListingElement.buildItems()
+  }
+
+  clearQueue() {
+    this.form.selectInput(this.grouplikeListingElement)
+    this.queueGrouplike.items = []
+    this.queueListingElement.buildItems()
+    this.queueListingElement.pathElement.showItem(null)
   }
 
   handleSpacePressed(callback) {
@@ -293,66 +299,75 @@ class AppElement extends FocusElement {
 
     if (playingThisTrack) {
       this.playingTrack = null
-      this.playNextTrack(item)
+      if (!this.playNextTrack(item)) {
+        this.clearPlayingTrack()
+      }
     }
   }
 
   playNextTrack(track) {
     if (!track) {
-      return
+      return false
     }
 
     const queue = this.queueGrouplike
     let queueIndex = queue.items.indexOf(track)
     if (queueIndex === -1) {
-      queueIndex = queue.items.length
+      return false
     }
     queueIndex++
 
     if (queueIndex >= queue.items.length) {
       const parent = track[parentSymbol]
       if (!parent) {
-        return
+        return false
       }
       const index = parent.items.indexOf(track)
       const nextItem = parent.items[index + 1]
       if (!nextItem) {
-        return
+        return false
       }
       this.queueGrouplikeItem(nextItem, false)
       queueIndex = queue.items.length - 1
     }
 
     this.playGrouplikeItem(queue.items[queueIndex], false)
+    return true
   }
 
   playPreviousTrack(track) {
     if (!track) {
-      return
+      return false
     }
 
     const queue = this.queueGrouplike
     let queueIndex = queue.items.indexOf(track)
     if (queueIndex === -1) {
-      queueIndex = queue.items.length
+      return false
     }
     queueIndex--
 
     if (queueIndex < 0) {
       const parent = track[parentSymbol]
       if (!parent) {
-        return
+        return false
       }
       const index = parent.items.indexOf(track)
       const previousItem = parent.items[index - 1]
       if (!previousItem) {
-        return
+        return false
       }
       this.queueGrouplikeItem(previousItem, false, 'FRONT')
       queueIndex = 0
     }
 
     this.playGrouplikeItem(queue.items[queueIndex], false)
+    return true
+  }
+
+  clearPlayingTrack() {
+    this.playingTrack = null
+    this.playbackInfoElement.clearInfo()
   }
 }
 
@@ -608,6 +623,18 @@ class PathItemElement extends FocusElement {
   }
 }
 
+class QueueListingElement extends GrouplikeListingElement {
+  keyPressed(keyBuf) {
+    if (telc.isCaselessLetter(keyBuf, 's')) {
+      this.emit('shuffle')
+    } else if (telc.isCaselessLetter(keyBuf, 'c')) {
+      this.emit('clear')
+    } else {
+      return super.keyPressed(keyBuf)
+    }
+  }
+}
+
 class PlaybackInfoElement extends DisplayElement {
   constructor() {
     super()
@@ -646,6 +673,14 @@ class PlaybackInfoElement extends DisplayElement {
   updateTrack(track) {
     this.trackNameLabel.text = track.name
     this.downloadLabel.text = `(From: ${track.downloaderArg})`
+    this.fixLayout()
+  }
+
+  clearInfo() {
+    this.progressBarLabel.text = ''
+    this.progressTextLabel.text = ''
+    this.trackNameLabel.text = ''
+    this.downloadLabel.text = ''
     this.fixLayout()
   }
 }
