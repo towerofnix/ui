@@ -135,6 +135,8 @@ class AppElement extends FocusElement {
       this.seekBack(10)
     } else if (telc.isCaselessLetter(keyBuf, 'p') || telc.isCaselessLetter(keyBuf, 'k')) {
       this.togglePause()
+    } else if (telc.isEscape(keyBuf)) {
+      this.clearPlayingTrack()
     } else if (telc.isShiftUp(keyBuf)) {
       this.playPreviousTrack(this.playingTrack)
     } else if (telc.isShiftDown(keyBuf)) {
@@ -188,6 +190,13 @@ class AppElement extends FocusElement {
 
   togglePause() {
     this.player.togglePause()
+  }
+
+  stopPlaying() {
+    // We emit this so playTrack doesn't immediately start a new track.
+    // We aren't *actually* about to play a new track.
+    this.emit('playing new track')
+    this.player.kill()
   }
 
   async queueGrouplikeItem(topItem, play = true, afterItem = null) {
@@ -367,6 +376,7 @@ class AppElement extends FocusElement {
 
   clearPlayingTrack() {
     this.playingTrack = null
+    this.stopPlaying()
     this.playbackInfoElement.clearInfo()
   }
 }

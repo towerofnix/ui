@@ -12,6 +12,7 @@
 * <kbd><kbd>Shift</kbd>+<kbd>Up</kbd></kbd> - play previous track
 * <kbd><kbd>Shift</kbd>+<kbd>Down</kbd></kbd> - play next track
 * <kbd>Space</kbd>, <kbd>p</kbd>, or <kbd>k</kbd> - toggle pause
+* <kbd>Escape</kbd> - stop playing the current track
 * <kbd>Right</kbd> or <kbd>l</kbd> - seek ahead
 * <kbd>Left</kbd> or <kbd>j</kbd> - seek back
 * **In the main listing:**
