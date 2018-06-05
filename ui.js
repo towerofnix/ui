@@ -1,6 +1,6 @@
 const { getDownloaderFor } = require('./downloaders')
 const { getPlayer } = require('./players')
-const { parentSymbol, isGroup, isTrack, getItemPath } = require('./playlist-utils')
+const { parentSymbol, isGroup, isTrack, getItemPath, getItemPathString } = require('./playlist-utils')
 const { shuffleArray } = require('./general-util')
 const ansi = require('./tui-lib/util/ansi')
 const Button = require('./tui-lib/ui/form/Button')
@@ -12,6 +12,11 @@ const ListScrollForm = require('./tui-lib/ui/form/ListScrollForm')
 const Pane = require('./tui-lib/ui/Pane')
 const RecordStore = require('./record-store')
 const telc = require('./tui-lib/util/telchars')
+const unic = require('./tui-lib/util/unichars')
+
+const fs = require('fs')
+const { promisify } = require('util')
+const writeFile = promisify(fs.writeFile)
 
 class AppElement extends FocusElement {
   constructor() {
@@ -21,6 +26,7 @@ class AppElement extends FocusElement {
     this.recordStore = new RecordStore()
     this.queueGrouplike = {isTheQueue: true, items: []}
 
+    this.rootDirectory = process.env.HOME + '/.http-music'
 
     this.form = new Form()
     this.addChild(this.form)
@@ -295,6 +301,14 @@ class AppElement extends FocusElement {
     if (!this.queueListingElement.isSelected) {
       this.queueListingElement.selectAndShow(item)
     }
+
+    await Promise.all([
+      writeFile(this.rootDirectory + '/current-track.txt',
+        getItemPathString(item)),
+      writeFile(this.rootDirectory + '/current-track.json',
+        JSON.stringify(item, null, 2))
+    ])
+
     try {
       await this.player.playFile(downloadFile)
     } finally {
@@ -672,6 +686,15 @@ class PlaybackInfoElement extends DisplayElement {
     this.progressBarLabel.y = 1
     this.progressTextLabel.y = this.progressBarLabel.y
     this.downloadLabel.y = 2
+
+    if (this.currentTrack) {
+      const dl = this.currentTrack.downloaderArg
+      let dlText = dl.slice(Math.max(dl.length - this.w + 20, 0))
+      if (dlText !== dl) {
+        dlText = unic.ELLIPSIS + dlText
+      }
+      this.downloadLabel.text = `(From: ${dlText})`
+    }
   }
 
   updateProgress({timeDone, timeLeft, duration, lenSecTotal, curSecTotal}) {
@@ -681,12 +704,13 @@ class PlaybackInfoElement extends DisplayElement {
   }
 
   updateTrack(track) {
+    this.currentTrack = track
     this.trackNameLabel.text = track.name
-    this.downloadLabel.text = `(From: ${track.downloaderArg})`
     this.fixLayout()
   }
 
   clearInfo() {
+    this.currentTrack = null
     this.progressBarLabel.text = ''
     this.progressTextLabel.text = ''
     this.trackNameLabel.text = ''
